@@ -48,23 +48,10 @@ async function loadReviews() {
             }).catch(() => null);
         }
 
-        if (res && res.ok) {
-            const data = await res.json();
-            const reviews = Array.isArray(data) ? data : (data.reviews || []);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
-            isServerOnline = true;
-            updateSyncStatus('online', isGas() ? 'クラウド同期中' : 'サーバー同期中');
-            
-            if (localStorage.getItem(PENDING_SYNC_KEY) === 'true') {
-                await syncOfflineData(reviews);
-            }
-            return reviews;
-        } else if (res && res.status === 401) {
-            isServerOnline = true;
-            updateSyncStatus('offline', 'パスコード未設定');
         } else {
             isServerOnline = false;
-            updateSyncStatus('offline', isGas() ? 'クラウド接続不可' : 'ローカルモード');
+            const statusText = isGas() ? `クラウド接続不可(${res ? res.status : '?'})` : 'ローカルモード';
+            updateSyncStatus('offline', statusText);
         }
     } catch (e) {
         console.error('Load Error:', e);
