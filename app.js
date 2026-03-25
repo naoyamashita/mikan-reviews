@@ -17,30 +17,6 @@ function isGas() {
     return url && url.includes('script.google.com');
 }
 
-// --- Helper: JSONP for GAS (Bypass CORS) ---
-function loadJSONP(url) {
-    return new Promise((resolve, reject) => {
-        const callbackName = 'gasCallback_' + Math.round(Math.random() * 1000000);
-        const script = document.createElement('script');
-        
-        window[callbackName] = (data) => {
-            delete window[callbackName];
-            document.body.removeChild(script);
-            resolve(data);
-        };
-        
-        script.onerror = () => {
-            delete window[callbackName];
-            document.body.removeChild(script);
-            reject(new Error('JSONP Load Failed'));
-        };
-        
-        const jsonpUrl = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
-        script.src = jsonpUrl;
-        document.body.appendChild(script);
-    });
-}
-
 // --- Data Layer ---
 async function loadReviews() {
     const apiUrl = getApiUrl();
@@ -57,10 +33,22 @@ async function loadReviews() {
         let reviews = [];
         
         if (isGas()) {
-            // Use JSONP to bypass CORS
-            const data = await loadJSONP(apiUrl);
-            reviews = Array.isArray(data) ? data : (data.reviews || []);
-            isServerOnline = true;
+            // Now that CSP is fixed, use fetch again (more debuggable)
+            const t = Date.now();
+            const fetchUrl = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 't=' + t;
+            const res = await fetch(fetchUrl, {
+                method: 'GET',
+                mode: 'cors',
+                redirect: 'follow'
+            });
+
+            if (res && res.ok) {
+                const data = await res.json();
+                reviews = Array.isArray(data) ? data : (data.reviews || []);
+                isServerOnline = true;
+            } else {
+                throw new Error(`HTTP ${res ? res.status : '?'}`);
+            }
         } else {
             const res = await fetch(apiUrl, {
                 headers: { 'x-mikan-passcode': passcode },
