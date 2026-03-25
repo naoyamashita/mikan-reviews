@@ -155,7 +155,7 @@ function renderReviews() {
                         <span class="review-rating-label">🌟 コク:</span> ${starsHTML(Math.round(g.avg.richness))}
                     </div>
                     <div class="review-rating-row">
-                        <span class="review-rating-label">🦷 食感:</span> ${starsHTML(Math.round(g.avg.membrane))}
+                        <span class="review-rating-label">👄 食感:</span> ${starsHTML(Math.round(g.avg.membrane))}
                     </div>
                 </div>
             </div>

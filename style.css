@@ -34,8 +34,13 @@ body {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 1.5rem 1rem 3rem;
     overflow-x: hidden;
+}
+
+@media (max-width: 400px) {
+    body {
+        padding: 1rem 0.5rem 2rem;
+    }
 }
 
 .container {
@@ -136,7 +141,7 @@ h1 {
 
 @media (max-width: 480px) {
     .input-section {
-        padding: 1.5rem 1.25rem;
+        padding: 1.25rem 1rem;
     }
 }
 
