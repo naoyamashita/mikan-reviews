@@ -1,39 +1,95 @@
 const API_URL = 'http://localhost:3000/api/reviews';
+const STORAGE_KEY = 'mikan_reviews';
+const PASSCODE_KEY = 'mikan_passcode';
+const PENDING_SYNC_KEY = 'mikan_pending_sync';
 
+let isServerOnline = false;
+
+// --- Data Layer ---
 async function loadReviews() {
+    updateSyncStatus('pending', '判定中...');
+    
     try {
-        // Try to load from server first
-        const res = await fetch(API_URL).catch(() => null);
+        const passcode = localStorage.getItem(PASSCODE_KEY) || '';
+        const res = await fetch(API_URL, {
+            headers: { 'x-mikan-passcode': passcode }
+        }).catch(() => null);
+
         if (res && res.ok) {
             const data = await res.json();
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); // cache locally
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            isServerOnline = true;
+            updateSyncStatus('online', 'サーバー同期中');
+            
+            // If we have pending syncs, try to push them
+            if (localStorage.getItem(PENDING_SYNC_KEY) === 'true') {
+                await syncOfflineData(data);
+            }
             return data;
+        } else if (res && res.status === 401) {
+            isServerOnline = true; // Server is up, but passcode wrong
+            updateSyncStatus('offline', 'パスコード未設定');
+        } else {
+            isServerOnline = false;
+            updateSyncStatus('offline', 'ローカルモード');
         }
-        // Fallback to localStorage
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
     } catch (e) {
-        console.error('Failed to load reviews:', e);
-        return [];
+        isServerOnline = false;
+        updateSyncStatus('offline', 'ローカルモード');
     }
+
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
 }
 
 async function saveReviews(reviews) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
-    // Try to sync to server
+    const passcode = localStorage.getItem(PASSCODE_KEY) || '';
+
     try {
-        await fetch(API_URL, {
+        const res = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'x-mikan-passcode': passcode
+            },
             body: JSON.stringify(reviews)
         });
+
+        if (res && res.ok) {
+            localStorage.setItem(PENDING_SYNC_KEY, 'false');
+            updateSyncStatus('online', '同期完了');
+            return true;
+        } else {
+            throw new Error('Sync failed');
+        }
     } catch (e) {
-        console.warn('Backend sync failed, saved locally only.');
+        localStorage.setItem(PENDING_SYNC_KEY, 'true');
+        updateSyncStatus('pending', '未同期あり');
+        return false;
     }
 }
 
-// ... rest of the functions (no change needed for createRadarChart labels as I already updated the call, 
-// but I should make sure createRadarChart positioning is good) ...
+async function syncOfflineData(serverData) {
+    const localRaw = localStorage.getItem(STORAGE_KEY);
+    if (!localRaw) return;
+    const localData = JSON.parse(localRaw);
+    
+    // Simple merge: if local has more items, push to server
+    if (localData.length > serverData.length) {
+        updateSyncStatus('pending', '同期中...');
+        await saveReviews(localData);
+    } else {
+        localStorage.setItem(PENDING_SYNC_KEY, 'false');
+    }
+}
+
+function updateSyncStatus(state, text) {
+    const el = document.getElementById('sync-status');
+    if (!el) return;
+    el.className = `sync-status ${state}`;
+    el.querySelector('.status-text').textContent = text;
+}
 
 function createRadarChart(data, size = 180, showLabels = false) {
     const center = size / 2;
@@ -354,6 +410,32 @@ function escapeHtml(str) {
 document.addEventListener('DOMContentLoaded', () => {
     initStars();
     renderReviews();
+
+    // Settings Toggle
+    const settingsToggle = document.getElementById('settings-toggle');
+    const settingsPanel = document.getElementById('settings-panel');
+    const passcodeUint = document.getElementById('passcode-input');
+
+    // Load saved passcode
+    passcodeUint.value = localStorage.getItem(PASSCODE_KEY) || '';
+
+    settingsToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        settingsPanel.classList.toggle('hide');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!settingsPanel.contains(e.target) && e.target !== settingsToggle) {
+            settingsPanel.classList.add('hide');
+        }
+    });
+
+    passcodeUint.addEventListener('input', (e) => {
+        localStorage.setItem(PASSCODE_KEY, e.target.value);
+        // Retry loading reviews when passcode changes
+        renderReviews();
+    });
+
     document.getElementById('add-btn').addEventListener('click', addReview);
     document.getElementById('export-btn').addEventListener('click', exportCSV);
     document.getElementById('import-btn').addEventListener('click', () => {
@@ -368,6 +450,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('variety-input').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') document.getElementById('add-btn').click();
     });
+
+    // Periodic Server Check
+    setInterval(() => {
+        loadReviews().then(reviews => {
+            // Only re-render if count changed or we were offline and now online
+            const count = parseInt(document.getElementById('review-count').textContent);
+            if (reviews.length !== count) {
+                renderReviews();
+            }
+        });
+    }, 10000); // Check every 10 seconds
 });
 
 

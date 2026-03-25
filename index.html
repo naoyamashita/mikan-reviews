@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' http://localhost:3000 http://localhost:8080;">
     <title>🍊 みかんレビュー | 品種別レビューデータベース</title>
     <meta name="description" content="みかんの品種ごとに甘味・酸味・剥きやすさ・コク・食感を記録するレビューアプリ">
     <meta name="theme-color" content="#ff8c00">
@@ -23,7 +24,24 @@
                 <div class="header-stats">
                     <span id="review-count">0</span> 件のレビュー
                 </div>
-                <button id="export-btn" class="icon-btn small" title="CSVダウンロード">⬇️</button>
+                <div class="sync-status" id="sync-status" title="サーバー同期状態">
+                    <span class="status-dot"></span>
+                    <span class="status-text">判定中...</span>
+                </div>
+                <div class="header-actions">
+                    <button id="export-btn" class="icon-btn small" title="CSVダウンロード">⬇️</button>
+                    <button id="settings-toggle" class="icon-btn small" title="設定">⚙️</button>
+                    <div id="settings-panel" class="settings-panel hide">
+                        <div class="settings-content">
+                            <h3>⚙️ 同期設定</h3>
+                            <div class="input-group">
+                                <label for="passcode-input">🔑 パスコード</label>
+                                <input type="password" id="passcode-input" placeholder="パスコードを入力">
+                            </div>
+                            <p class="settings-hint">※server.js連携に必要です。</p>
+                        </div>
+                    </div>
+                </div>
             </div>
             <h1>🍊 みかんレビュー</h1>
             <p class="subtitle">品種別 テイスティングノート</p>
