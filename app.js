@@ -42,12 +42,21 @@ function loadJSONP(url) {
 }
 
 // --- Data Layer ---
-async function loadReviews() {
+let localReviews = null; // Memory cache for instant UI updates
+
+// --- Data Layer ---
+async function loadReviews(forceFetch = false) {
     const apiUrl = getApiUrl();
     if (!apiUrl && !isGas()) {
         updateSyncStatus('offline', 'ローカルモード');
         const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
+        localReviews = raw ? JSON.parse(raw) : [];
+        return localReviews;
+    }
+
+    // If we have cached data and aren't forcing a fetch, return cache to be fast
+    if (localReviews !== null && !forceFetch) {
+        return localReviews;
     }
 
     updateSyncStatus('pending', '接続中...');
@@ -78,6 +87,7 @@ async function loadReviews() {
             }
         }
 
+        localReviews = reviews;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
         updateSyncStatus('online', isGas() ? 'クラウド同期中' : 'サーバー同期中');
         
@@ -91,14 +101,22 @@ async function loadReviews() {
         isServerOnline = false;
         const errMsg = e.message || '通信失敗';
         updateSyncStatus('offline', isGas() ? `同期エラー: ${errMsg}` : 'ローカルモード');
+        
+        // Fallback to local storage if network fails
+        if (localReviews === null) {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            localReviews = raw ? JSON.parse(raw) : [];
+        }
     }
 
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    return localReviews || [];
 }
 
 async function saveReviews(reviews) {
+    // Update local cache and storage first for immediate availability
+    localReviews = reviews;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
+    
     const apiUrl = getApiUrl();
     const passcode = localStorage.getItem(PASSCODE_KEY) || '';
 
@@ -106,7 +124,7 @@ async function saveReviews(reviews) {
 
     try {
         if (isGas()) {
-            // Use JSONP (GET) for saving as well
+            // Use GET (JSONP) for saving
             const dataPayload = encodeURIComponent(JSON.stringify({ reviews, passcode }));
             const saveUrl = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'action=save&data=' + dataPayload;
             
@@ -255,23 +273,27 @@ async function addReview() {
         memo
     };
 
-    const reviews = await loadReviews();
-    reviews.push(review);
-    await saveReviews(reviews);
-    await renderReviews();
-
+    // --- UI Local First ---
+    // Update local list and UI immediately without waiting for server
+    if (localReviews === null) localReviews = [];
+    localReviews.push(review);
+    renderReviews(localReviews); // Use data passed explicitly
+    
+    // Reset form immediately
     document.getElementById('variety-input').value = '';
     document.getElementById('memo-input').value = '';
     resetStars();
+    showToast(`「${variety}」を保存中... ☁️`);
 
-    showToast(`「${variety}」のレビューを保存しました ✅`);
+    // Sync in background
+    await saveReviews(localReviews);
 }
 
 async function deleteReview(id) {
-    const reviews = (await loadReviews()).filter(r => r.id !== id);
-    await saveReviews(reviews);
-    await renderReviews();
-    showToast('削除しました');
+    if (localReviews === null) return;
+    localReviews = localReviews.filter(r => r.id !== id);
+    renderReviews(localReviews);
+    await saveReviews(localReviews);
 }
 
 function updateVarietySuggestions(reviews) {
@@ -282,8 +304,8 @@ function updateVarietySuggestions(reviews) {
     datalist.innerHTML = varieties.map(v => `<option value="${escapeHtml(v)}">`).join('');
 }
 
-async function renderReviews() {
-    const reviews = await loadReviews();
+async function renderReviews(dataToRender = null) {
+    const reviews = dataToRender || await loadReviews();
     updateVarietySuggestions(reviews);
     
     const list = document.getElementById('review-list');
@@ -594,16 +616,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') document.getElementById('add-btn').click();
     });
 
-    // Periodic Server Check
+    // Periodic Server Sync
     setInterval(() => {
-        loadReviews().then(reviews => {
-            // Only re-render if count changed or we were offline and now online
-            const count = parseInt(document.getElementById('review-count').textContent);
-            if (reviews.length !== count) {
-                renderReviews();
+        // Only fetch from server if we are online
+        loadReviews(true).then(reviews => {
+            // Use a stable comparison to prevent flickering
+            const currentCount = parseInt(document.getElementById('review-count').textContent);
+            if (reviews && reviews.length !== currentCount) {
+                renderReviews(reviews);
             }
         });
-    }, 10000); // Check every 10 seconds
+    }, 15000); // Check every 15 seconds to be gentle
 });
 
 
