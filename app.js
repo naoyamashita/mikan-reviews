@@ -235,7 +235,7 @@ async function renderReviews() {
                             <span class="comment-date">${formatDate(r.date)}</span>
                             <button class="delete-btn mini" data-id="${r.id}" title="削除">🗑</button>
                         </div>
-                        <div class="comment-text">${escapeHtml(r.memo || '(コメントなし)')}</div>
+                        <div class="comment-text">${r.memo ? escapeHtml(r.memo) : ''}</div>
                     </div>
                 `).join('')}
             </div>
