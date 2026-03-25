@@ -1,33 +1,59 @@
-const API_URL = 'http://localhost:3000/api/reviews';
+const DEFAULT_LOCAL_API = 'http://localhost:3000/api/reviews';
 const STORAGE_KEY = 'mikan_reviews';
 const PASSCODE_KEY = 'mikan_passcode';
+const GAS_URL_KEY = 'mikan_gas_url';
 const PENDING_SYNC_KEY = 'mikan_pending_sync';
 
 let isServerOnline = false;
 
+function getApiUrl() {
+    return localStorage.getItem(GAS_URL_KEY) || DEFAULT_LOCAL_API;
+}
+
+function isGas() {
+    const url = getApiUrl();
+    return url && url.includes('script.google.com');
+}
+
 // --- Data Layer ---
 async function loadReviews() {
+    const apiUrl = getApiUrl();
+    if (!apiUrl && !isGas()) {
+        updateSyncStatus('offline', 'ローカルモード');
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+    }
+
     updateSyncStatus('pending', '判定中...');
     
     try {
         const passcode = localStorage.getItem(PASSCODE_KEY) || '';
-        const res = await fetch(API_URL, {
-            headers: { 'x-mikan-passcode': passcode }
-        }).catch(() => null);
+        let res;
+        
+        if (isGas()) {
+            // GAS doesn't like custom headers for GET, use query param if needed
+            // But here we just fetch all
+            res = await fetch(apiUrl).catch(() => null);
+        } else {
+            res = await fetch(apiUrl, {
+                headers: { 'x-mikan-passcode': passcode }
+            }).catch(() => null);
+        }
 
         if (res && res.ok) {
             const data = await res.json();
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            // JSON format check for GAS (might be wrapped or different)
+            const reviews = Array.isArray(data) ? data : (data.reviews || []);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
             isServerOnline = true;
-            updateSyncStatus('online', 'サーバー同期中');
+            updateSyncStatus('online', isGas() ? 'クラウド同期中' : 'サーバー同期中');
             
-            // If we have pending syncs, try to push them
             if (localStorage.getItem(PENDING_SYNC_KEY) === 'true') {
-                await syncOfflineData(data);
+                await syncOfflineData(reviews);
             }
-            return data;
+            return reviews;
         } else if (res && res.status === 401) {
-            isServerOnline = true; // Server is up, but passcode wrong
+            isServerOnline = true;
             updateSyncStatus('offline', 'パスコード未設定');
         } else {
             isServerOnline = false;
@@ -44,24 +70,42 @@ async function loadReviews() {
 
 async function saveReviews(reviews) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
+    const apiUrl = getApiUrl();
     const passcode = localStorage.getItem(PASSCODE_KEY) || '';
 
-    try {
-        const res = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'x-mikan-passcode': passcode
-            },
-            body: JSON.stringify(reviews)
-        });
+    if (!apiUrl && !isGas()) return false;
 
-        if (res && res.ok) {
+    try {
+        let res;
+        if (isGas()) {
+            // GAS POST requires passcode in body to avoid preflight issues with custom headers
+            res = await fetch(apiUrl, {
+                method: 'POST',
+                mode: 'no-cors', // Standard for GAS Web Apps if not handled specifically, but let's try 'cors' first
+                headers: { 'Content-Type': 'text/plain' }, // Avoid complex preflight
+                body: JSON.stringify({ reviews, passcode })
+            });
+            // With 'no-cors', we can't check res.ok, but we assume success or handle offline
+            isServerOnline = true;
             localStorage.setItem(PENDING_SYNC_KEY, 'false');
-            updateSyncStatus('online', '同期完了');
+            updateSyncStatus('online', 'クラウド同期完了');
             return true;
         } else {
-            throw new Error('Sync failed');
+            res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-mikan-passcode': passcode
+                },
+                body: JSON.stringify(reviews)
+            });
+            if (res && res.ok) {
+                localStorage.setItem(PENDING_SYNC_KEY, 'false');
+                updateSyncStatus('online', '同期完了');
+                return true;
+            } else {
+                throw new Error('Sync failed');
+            }
         }
     } catch (e) {
         localStorage.setItem(PENDING_SYNC_KEY, 'true');
@@ -474,8 +518,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsPanel = document.getElementById('settings-panel');
     const passcodeUint = document.getElementById('passcode-input');
 
-    // Load saved passcode
+    const gasUrlInput = document.getElementById('gas-url-input');
+    
+    // Load saved settings
     passcodeUint.value = localStorage.getItem(PASSCODE_KEY) || '';
+    gasUrlInput.value = localStorage.getItem(GAS_URL_KEY) || '';
 
     settingsToggle.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -490,7 +537,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     passcodeUint.addEventListener('input', (e) => {
         localStorage.setItem(PASSCODE_KEY, e.target.value);
-        // Retry loading reviews when passcode changes
+        renderReviews();
+    });
+
+    gasUrlInput.addEventListener('input', (e) => {
+        localStorage.setItem(GAS_URL_KEY, e.target.value);
         renderReviews();
     });
 

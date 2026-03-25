@@ -20,10 +20,11 @@
 |---|---|
 | `index.html` | アプリの構造。入力フォーム＋レビュー一覧 |
 | `style.css` | オレンジ系グラスモーフィズムのデザイン |
-| `app.js` | ロジック全般（保存・表示・CSV出入力） |
+| `app.js` | ロジック全般（保存・表示・GAS連携） |
+| `google_apps_script.gs` | Google Sheets用バックエンドコード |
 | `manifest.json` | PWA設定（ホーム画面追加用） |
 | `apple-touch-icon.png` | iOSホーム画面用アイコン |
-| `mikan_reviews.csv` | CSVエクスポートのひな形（ヘッダー定義）|
+| `mikan_reviews.csv` | ローカル保存時のエクスポート用 |
 
 ## ⚙️ 主要な仕様
 

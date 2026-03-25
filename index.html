@@ -38,7 +38,11 @@
                                 <label for="passcode-input">🔑 パスコード</label>
                                 <input type="password" id="passcode-input" placeholder="パスコードを入力">
                             </div>
-                            <p class="settings-hint">※server.js連携に必要です。</p>
+                            <div class="setting-item">
+                                <label for="gas-url-input">☁️ Google Sheets API URL</label>
+                                <input type="url" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec">
+                            </div>
+                            <p class="settings-hint">※Googleスプレッドシートと同期する場合にURLを入力してください。空の場合はローカル保存のみになります。</p>
                         </div>
                     </div>
                 </div>
