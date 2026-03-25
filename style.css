@@ -339,20 +339,23 @@ textarea::placeholder {
 }
 
 .stars-input .star {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     color: var(--star-inactive);
-    transition: color 0.15s, transform 0.15s;
+    transition: color 0.1s, transform 0.1s;
     user-select: none;
+    cursor: pointer;
+    padding: 0 4px;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 .stars-input .star.active {
     color: var(--star-active);
-    text-shadow: 0 0 8px rgba(255, 140, 0, 0.5);
+    text-shadow: 0 0 10px rgba(255, 140, 0, 0.4);
 }
 
-.stars-input .star:hover {
-    transform: scale(1.2);
+.stars-input .star:active {
+    transform: scale(0.9);
 }
 
 .rating-val {

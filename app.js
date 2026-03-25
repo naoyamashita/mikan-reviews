@@ -407,6 +407,64 @@ function escapeHtml(str) {
         .replace(/"/g, '&quot;');
 }
 
+function initStars() {
+    const containers = document.querySelectorAll('.stars-input');
+    containers.forEach(container => {
+        const stars = container.querySelectorAll('.star');
+        stars.forEach(star => {
+            const handleSelect = (e) => {
+                e.preventDefault(); // Prevents double firing (touch + click)
+                const val = parseInt(star.dataset.val);
+                const targetId = container.dataset.target;
+                const input = document.getElementById(targetId);
+                if (input) {
+                    input.value = val;
+                    updateStars(container, val);
+                }
+            };
+            star.addEventListener('click', handleSelect);
+            star.addEventListener('touchstart', handleSelect, { passive: false });
+        });
+    });
+}
+
+function updateStars(container, val) {
+    const stars = container.querySelectorAll('.star');
+    stars.forEach(s => {
+        s.classList.toggle('active', parseInt(s.dataset.val) <= val);
+    });
+}
+
+function resetStars() {
+    document.querySelectorAll('.stars-input').forEach(container => {
+        updateStars(container, 0);
+        const targetId = container.dataset.target;
+        const input = document.getElementById(targetId);
+        if (input) input.value = 0;
+    });
+}
+
+function starsHTML(val) {
+    let html = '<div class="stars-mini">';
+    for (let i = 1; i <= 5; i++) {
+        html += `<span class="star-s ${i <= Math.round(val) ? 'active' : ''}">★</span>`;
+    }
+    html += '</div>';
+    return html;
+}
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initStars();
     renderReviews();
