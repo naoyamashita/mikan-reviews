@@ -17,6 +17,30 @@ function isGas() {
     return url && url.includes('script.google.com');
 }
 
+// --- Helper: JSONP for GAS (Bypass CORS) ---
+function loadJSONP(url) {
+    return new Promise((resolve, reject) => {
+        const callbackName = 'gasCallback_' + Math.round(Math.random() * 1000000);
+        const script = document.createElement('script');
+        
+        window[callbackName] = (data) => {
+            delete window[callbackName];
+            document.body.removeChild(script);
+            resolve(data);
+        };
+        
+        script.onerror = () => {
+            delete window[callbackName];
+            document.body.removeChild(script);
+            reject(new Error('JSONP Load Failed'));
+        };
+        
+        const jsonpUrl = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
+        script.src = jsonpUrl;
+        document.body.appendChild(script);
+    });
+}
+
 // --- Data Layer ---
 async function loadReviews() {
     const apiUrl = getApiUrl();
@@ -30,52 +54,40 @@ async function loadReviews() {
     
     try {
         const passcode = localStorage.getItem(PASSCODE_KEY) || '';
-        let res;
+        let reviews = [];
         
         if (isGas()) {
-            // Add cache buster to URL to force fresh fetch
-            const t = Date.now();
-            const fetchUrl = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 't=' + t;
-            
-            res = await fetch(fetchUrl, {
-                method: 'GET',
-                mode: 'cors',
-                redirect: 'follow',
-                cache: 'no-cache'
-            }); // No inner catch!
+            // Use JSONP to bypass CORS
+            const data = await loadJSONP(apiUrl);
+            reviews = Array.isArray(data) ? data : (data.reviews || []);
+            isServerOnline = true;
         } else {
-            res = await fetch(apiUrl, {
+            const res = await fetch(apiUrl, {
                 headers: { 'x-mikan-passcode': passcode },
                 cache: 'no-cache'
             });
+            if (res && res.ok) {
+                const data = await res.json();
+                reviews = Array.isArray(data) ? data : (data.reviews || []);
+                isServerOnline = true;
+            } else {
+                throw new Error(`HTTP ${res ? res.status : '?'}`);
+            }
         }
 
-        if (res && res.ok) {
-            const data = await res.json();
-            const reviews = Array.isArray(data) ? data : (data.reviews || []);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
-            isServerOnline = true;
-            updateSyncStatus('online', isGas() ? 'クラウド同期中' : 'サーバー同期中');
-            
-            if (localStorage.getItem(PENDING_SYNC_KEY) === 'true') {
-                await syncOfflineData(reviews);
-            }
-            return reviews;
-        } else if (res && res.status === 401) {
-            isServerOnline = true;
-            updateSyncStatus('offline', 'パスコード不足');
-        } else {
-            isServerOnline = false;
-            // More distinct text to confirm version
-            const statusText = isGas() ? `接続不可(HTTP:${res ? res.status : '?'})` : 'ローカルモード';
-            updateSyncStatus('offline', statusText);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
+        updateSyncStatus('online', isGas() ? 'クラウド同期中' : 'サーバー同期中');
+        
+        if (localStorage.getItem(PENDING_SYNC_KEY) === 'true') {
+            await syncOfflineData(reviews);
         }
+        return reviews;
+
     } catch (e) {
         console.error('Load Error:', e);
         isServerOnline = false;
-        // GAS/CORS debug: show the actual error message
         const errMsg = e.message || '不明なエラー';
-        updateSyncStatus('offline', isGas() ? `エラー: ${errMsg}` : 'ローカルモード');
+        updateSyncStatus('offline', isGas() ? `同期エラー: ${errMsg}` : 'ローカルモード');
     }
 
     const raw = localStorage.getItem(STORAGE_KEY);
