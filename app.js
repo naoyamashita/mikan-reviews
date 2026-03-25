@@ -61,16 +61,18 @@ async function loadReviews() {
             return reviews;
         } else if (res && res.status === 401) {
             isServerOnline = true;
-            updateSyncStatus('offline', 'パスコード未設定');
+            updateSyncStatus('offline', 'パスコード不足');
         } else {
             isServerOnline = false;
-            const statusText = isGas() ? `クラウド接続不可(${res ? res.status : '?'})` : 'ローカルモード';
+            // More distinct text to confirm version
+            const statusText = isGas() ? `接続不可(HTTP:${res ? res.status : '?'})` : 'ローカルモード';
             updateSyncStatus('offline', statusText);
         }
     } catch (e) {
         console.error('Load Error:', e);
         isServerOnline = false;
-        updateSyncStatus('offline', isGas() ? '通信エラー' : 'ローカルモード');
+        // More distinct text to confirm version
+        updateSyncStatus('offline', isGas() ? 'ネットワーク遮断(CORS等)' : 'ローカルモード');
     }
 
     const raw = localStorage.getItem(STORAGE_KEY);
