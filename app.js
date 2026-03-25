@@ -156,11 +156,11 @@ function updateStats(reviews) {
 
     const sums = { sweetness: 0, acidity: 0, peelability: 0, richness: 0, membrane: 0 };
     reviews.forEach(r => {
-        sums.sweetness += r.sweetness;
-        sums.acidity += r.acidity;
-        sums.peelability += r.peelability;
-        sums.richness += r.richness;
-        sums.membrane += r.membrane;
+        sums.sweetness += (r.sweetness || 0);
+        sums.acidity += (r.acidity || 0);
+        sums.peelability += (r.peelability || 0);
+        sums.richness += (r.richness || 0);
+        sums.membrane += (r.membrane || 0);
     });
 
     const count = reviews.length;
