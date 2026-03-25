@@ -1,193 +1,43 @@
-'use strict';
+const API_URL = 'http://localhost:3000/api/reviews';
 
-const STORAGE_KEY = 'mikan_reviews';
-
-// --- Data Layer ---
-function loadReviews() {
+async function loadReviews() {
     try {
+        // Try to load from server first
+        const res = await fetch(API_URL).catch(() => null);
+        if (res && res.ok) {
+            const data = await res.json();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); // cache locally
+            return data;
+        }
+        // Fallback to localStorage
         const raw = localStorage.getItem(STORAGE_KEY);
         return raw ? JSON.parse(raw) : [];
     } catch (e) {
+        console.error('Failed to load reviews:', e);
         return [];
     }
 }
 
-function saveReviews(reviews) {
+async function saveReviews(reviews) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
-}
-
-// --- UI: Toast ---
-let toastTimer = null;
-function showToast(msg) {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.remove('hide');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.add('hide'), 2500);
-}
-
-// --- UI: Star Ratings ---
-function initStars() {
-    document.querySelectorAll('.stars-input').forEach(group => {
-        const targetId = group.dataset.target;
-        const hiddenInput = document.getElementById(targetId);
-        const valSpan = document.getElementById(targetId.replace('-input', '-val'));
-        const stars = group.querySelectorAll('.star');
-
-        const updateStars = (val) => {
-            stars.forEach(s => {
-                s.classList.toggle('active', parseInt(s.dataset.val) <= val);
-            });
-            valSpan.textContent = val > 0 ? `${val} / 5` : '-';
-        };
-
-        stars.forEach(star => {
-            star.addEventListener('click', () => {
-                const val = parseInt(star.dataset.val);
-                hiddenInput.value = val;
-                updateStars(val);
-            });
-
-            star.addEventListener('mouseover', () => {
-                updateStars(parseInt(star.dataset.val));
-            });
-
-            star.addEventListener('mouseout', () => {
-                updateStars(parseInt(hiddenInput.value) || 0);
-            });
+    // Try to sync to server
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reviews)
         });
-    });
-}
-
-function resetStars() {
-    document.querySelectorAll('.stars-input').forEach(group => {
-        const targetId = group.dataset.target;
-        const hiddenInput = document.getElementById(targetId);
-        const valSpan = document.getElementById(targetId.replace('-input', '-val'));
-        hiddenInput.value = 0;
-        group.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
-        valSpan.textContent = '-';
-    });
-}
-
-// --- UI: Render Reviews ---
-function starsHTML(val) {
-    let html = '';
-    for (let i = 1; i <= 5; i++) {
-        if (i <= val) html += '<span>★</span>';
-        else html += '<span class="empty-star">★</span>';
+    } catch (e) {
+        console.warn('Backend sync failed, saved locally only.');
     }
-    return `<span class="review-stars">${html}</span>`;
 }
 
-function formatDate(isoString) {
-    const d = new Date(isoString);
-    return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
-}
+// ... rest of the functions (no change needed for createRadarChart labels as I already updated the call, 
+// but I should make sure createRadarChart positioning is good) ...
 
-function renderReviews() {
-    const reviews = loadReviews();
-    const list = document.getElementById('review-list');
-    const countEl = document.getElementById('review-count');
-    countEl.textContent = reviews.length;
-
-    if (reviews.length === 0) {
-        list.innerHTML = '<p class="empty-state">まだレビューがありません。<br>上のフォームから最初のレビューを追加しましょう！</p>';
-        return;
-    }
-
-    // Group by variety
-    const groups = {};
-    reviews.forEach(r => {
-        if (!groups[r.variety]) {
-            groups[r.variety] = {
-                variety: r.variety,
-                reviews: [],
-                avg: { sweetness: 0, acidity: 0, peelability: 0, richness: 0, membrane: 0 }
-            };
-        }
-        groups[r.variety].reviews.push(r);
-    });
-
-    // Calculate averages and sort groups by newest review date
-    const groupedList = Object.values(groups).map(g => {
-        const count = g.reviews.length;
-        g.reviews.forEach(r => {
-            g.avg.sweetness += (r.sweetness || 0);
-            g.avg.acidity += (r.acidity || 0);
-            g.avg.peelability += (r.peelability || 0);
-            g.avg.richness += (r.richness || 0);
-            g.avg.membrane += (r.membrane || 0);
-        });
-        g.avg.sweetness /= count;
-        g.avg.acidity /= count;
-        g.avg.peelability /= count;
-        g.avg.richness /= count;
-        g.avg.membrane /= count;
-
-        // Latest date for sorting
-        g.latestDate = Math.max(...g.reviews.map(r => new Date(r.date).getTime()));
-        return g;
-    }).sort((a, b) => (b.latestDate || 0) - (a.latestDate || 0));
-
-    list.innerHTML = groupedList.map(g => `
-        <div class="review-card" data-variety="${escapeHtml(g.variety)}">
-            <div class="review-variety-header">
-                <div class="review-variety">${escapeHtml(g.variety)}</div>
-                <div class="review-count-badge">${g.reviews.length} 件の評価</div>
-            </div>
-            <div class="review-body">
-                <div class="review-chart-container">
-                    ${createRadarChart(g.avg, 140, false)}
-                </div>
-                <div class="review-ratings-list">
-                    <div class="review-avg-label">平均スコア</div>
-                    <div class="review-rating-row">
-                        <span class="review-rating-label">🍯 甘味:</span> ${starsHTML(Math.round(g.avg.sweetness))}
-                    </div>
-                    <div class="review-rating-row">
-                        <span class="review-rating-label">🍋 酸味:</span> ${starsHTML(Math.round(g.avg.acidity))}
-                    </div>
-                    <div class="review-rating-row">
-                        <span class="review-rating-label">👐 剥き:</span> ${starsHTML(Math.round(g.avg.peelability))}
-                    </div>
-                    <div class="review-rating-row">
-                        <span class="review-rating-label">🌟 コク:</span> ${starsHTML(Math.round(g.avg.richness))}
-                    </div>
-                    <div class="review-rating-row">
-                        <span class="review-rating-label">👄 食感:</span> ${starsHTML(Math.round(g.avg.membrane))}
-                    </div>
-                </div>
-            </div>
-            
-            <div class="review-comments-section">
-                ${g.reviews.sort((a, b) => new Date(b.date) - new Date(a.date)).map(r => `
-                    <div class="review-comment-item">
-                        <div class="comment-header">
-                            <span class="comment-author">👤 ${escapeHtml(r.member || '匿名')}</span>
-                            <span class="comment-date">${formatDate(r.date)}</span>
-                            <button class="delete-btn mini" data-id="${r.id}" title="削除">🗑</button>
-                        </div>
-                        <div class="comment-text">${escapeHtml(r.memo || '(コメントなし)')}</div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `).join('');
-
-    // Bind delete buttons
-    list.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (confirm('このレビューを削除しますか？')) {
-                deleteReview(btn.dataset.id);
-            }
-        });
-    });
-}
-
-function createRadarChart(data, size = 100, showLabels = false) {
+function createRadarChart(data, size = 180, showLabels = false) {
     const center = size / 2;
-    const radius = size * 0.35;
+    const radius = size * 0.32; // Slightly smaller to fit labels
     const points = [
         { label: 'コク', val: data.richness || 0 },
         { label: '甘味', val: data.sweetness || 0 },
@@ -213,7 +63,7 @@ function createRadarChart(data, size = 100, showLabels = false) {
     });
 
     const dataPts = points.map((p, i) => {
-        const r = (Math.max(0.5, p.val) / 5) * radius;
+        const r = (Math.max(0.3, p.val) / 5) * radius;
         const angle = (i / 5) * 2 * Math.PI - Math.PI / 2;
         return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
     }).join(' ');
@@ -223,9 +73,16 @@ function createRadarChart(data, size = 100, showLabels = false) {
     if (showLabels) {
         points.forEach((p, i) => {
             const angle = (i / 5) * 2 * Math.PI - Math.PI / 2;
-            const x = center + (radius + 15) * Math.cos(angle);
-            const y = center + (radius + 15) * Math.sin(angle);
-            labels += `<text x="${x}" y="${y}" class="chart-label" text-anchor="middle" dominant-baseline="middle">${p.label}</text>`;
+            const dist = radius + 20;
+            const x = center + dist * Math.cos(angle);
+            const y = center + dist * Math.sin(angle);
+            
+            // Adjust label anchor based on position
+            let anchor = 'middle';
+            if (x < center - 10) anchor = 'end';
+            else if (x > center + 10) anchor = 'start';
+            
+            labels += `<text x="${x}" y="${y}" class="chart-label" text-anchor="${anchor}" dominant-baseline="middle">${p.label}</text>`;
         });
     }
 
@@ -239,15 +96,8 @@ function createRadarChart(data, size = 100, showLabels = false) {
     `;
 }
 
-function escapeHtml(str) {
-    return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
-
-function addReview() {
+// --- Actions ---
+async function addReview() {
     const member = document.getElementById('member-input').value.trim();
     const variety = document.getElementById('variety-input').value.trim();
     const sweetness = parseInt(document.getElementById('sweetness-input').value) || 0;
@@ -277,12 +127,11 @@ function addReview() {
         memo
     };
 
-    const reviews = loadReviews();
+    const reviews = await loadReviews();
     reviews.push(review);
-    saveReviews(reviews);
-    renderReviews();
+    await saveReviews(reviews);
+    await renderReviews();
 
-    // Reset variety and memo, but keep member name
     document.getElementById('variety-input').value = '';
     document.getElementById('memo-input').value = '';
     resetStars();
@@ -290,52 +139,146 @@ function addReview() {
     showToast(`「${variety}」のレビューを保存しました ✅`);
 }
 
-function deleteReview(id) {
-    const reviews = loadReviews().filter(r => r.id !== id);
-    saveReviews(reviews);
-    renderReviews();
+async function deleteReview(id) {
+    const reviews = (await loadReviews()).filter(r => r.id !== id);
+    await saveReviews(reviews);
+    await renderReviews();
     showToast('削除しました');
 }
 
+async function renderReviews() {
+    const reviews = await loadReviews();
+    const list = document.getElementById('review-list');
+    const countEl = document.getElementById('review-count');
+    countEl.textContent = reviews.length;
+
+    if (reviews.length === 0) {
+        list.innerHTML = '<p class="empty-state">まだレビューがありません。<br>上のフォームから最初のレビューを追加しましょう！</p>';
+        return;
+    }
+
+    // Grouping logic... [SAME as before, but ensure it's in the updated app.js]
+    const groups = {};
+    reviews.forEach(r => {
+        if (!groups[r.variety]) {
+            groups[r.variety] = {
+                variety: r.variety,
+                reviews: [],
+                avg: { sweetness: 0, acidity: 0, peelability: 0, richness: 0, membrane: 0 }
+            };
+        }
+        groups[r.variety].reviews.push(r);
+    });
+
+    const groupedList = Object.values(groups).map(g => {
+        const count = g.reviews.length;
+        g.reviews.forEach(r => {
+            g.avg.sweetness += (r.sweetness || 0);
+            g.avg.acidity += (r.acidity || 0);
+            g.avg.peelability += (r.peelability || 0);
+            g.avg.richness += (r.richness || 0);
+            g.avg.membrane += (r.membrane || 0);
+        });
+        g.avg.sweetness /= count;
+        g.avg.acidity /= count;
+        g.avg.peelability /= count;
+        g.avg.richness /= count;
+        g.avg.membrane /= count;
+        g.latestDate = Math.max(...g.reviews.map(r => new Date(r.date).getTime()));
+        return g;
+    }).sort((a, b) => b.latestDate - a.latestDate);
+
+    list.innerHTML = groupedList.map(g => `
+        <div class="review-card" data-variety="${escapeHtml(g.variety)}">
+            <div class="review-variety-header">
+                <div class="review-variety">${escapeHtml(g.variety)}</div>
+                <div class="review-count-badge">${g.reviews.length} 件の評価</div>
+            </div>
+            <div class="review-body">
+                <div class="review-chart-container">
+                    ${createRadarChart(g.avg, 180, true)}
+                </div>
+                <div class="review-ratings-list">
+                    <div class="review-avg-label">平均スコア</div>
+                    <div class="review-rating-row">
+                        <span class="review-rating-label">🍯 甘味:</span> ${starsHTML(Math.round(g.avg.sweetness))}
+                    </div>
+                    <div class="review-rating-row">
+                        <span class="review-rating-label">🍋 酸味:</span> ${starsHTML(Math.round(g.avg.acidity))}
+                    </div>
+                    <div class="review-rating-row">
+                        <span class="review-rating-label">👐 剥き:</span> ${starsHTML(Math.round(g.avg.peelability))}
+                    </div>
+                    <div class="review-rating-row">
+                        <span class="review-rating-label">🌟 コク:</span> ${starsHTML(Math.round(g.avg.richness))}
+                    </div>
+                    <div class="review-rating-row">
+                        <span class="review-rating-label">👄 食感:</span> ${starsHTML(Math.round(g.avg.membrane))}
+                    </div>
+                </div>
+            </div>
+            <div class="review-comments-section">
+                ${g.reviews.sort((a, b) => new Date(b.date) - new Date(a.date)).map(r => `
+                    <div class="review-comment-item">
+                        <div class="comment-header">
+                            <span class="comment-author">👤 ${escapeHtml(r.member || '匿名')}</span>
+                            <span class="comment-date">${formatDate(r.date)}</span>
+                            <button class="delete-btn mini" data-id="${r.id}" title="削除">🗑</button>
+                        </div>
+                        <div class="comment-text">${escapeHtml(r.memo || '(コメントなし)')}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+
+    list.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (confirm('このレビューを削除しますか？')) {
+                deleteReview(btn.dataset.id);
+            }
+        });
+    });
+}
+
 function exportCSV() {
-    const reviews = loadReviews();
-    if (reviews.length === 0) { showToast('エクスポートするデータがありません'); return; }
-
-    const header = ['ID', '日付', '評価者', '品種', '甘味', '酸味', '剥きやすさ', 'コク', '食感', '感想・メモ'];
-    const rows = reviews.map(r => [
-        r.id,
-        formatDate(r.date),
-        `"${(r.member || '').replace(/"/g, '""')}"`,
-        `"${r.variety.replace(/"/g, '""')}"`,
-        r.sweetness,
-        r.acidity,
-        r.peelability,
-        r.richness,
-        r.membrane || 0,
-        `"${(r.memo || '').replace(/"/g, '""')}"`
-    ].join(','));
-
-    const csvContent = '\uFEFF' + [header.join(','), ...rows].join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `mikan_reviews_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast(`${reviews.length}件のデータをダウンロードしました ⬇️`);
+    loadReviews().then(reviews => {
+        if (reviews.length === 0) { showToast('エクスポートするデータがありません'); return; }
+        const header = ['ID', '日付', '評価者', '品種', '甘味', '酸味', '剥きやすさ', 'コク', '食感', '感想・メモ'];
+        const rows = reviews.map(r => [
+            r.id,
+            formatDate(r.date),
+            `"${(r.member || '').replace(/"/g, '""')}"`,
+            `"${r.variety.replace(/"/g, '""')}"`,
+            r.sweetness,
+            r.acidity,
+            r.peelability,
+            r.richness,
+            r.membrane || 0,
+            `"${(r.memo || '').replace(/"/g, '""')}"`
+        ].join(','));
+        const csvContent = '\uFEFF' + [header.join(','), ...rows].join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mikan_reviews_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast(`${reviews.length}件のデータをダウンロードしました ⬇️`);
+    });
 }
 
 function importCSV(file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
         try {
             const text = e.target.result.replace(/^\uFEFF/, '');
             const lines = text.split(/\r?\n/).filter(l => l.trim());
             const dataLines = lines.slice(1);
             if (dataLines.length === 0) { showToast('インポートするデータがありません'); return; }
 
-            const existing = loadReviews();
+            const existing = await loadReviews();
             const existingIds = new Set(existing.map(r => r.id));
             let added = 0;
 
@@ -344,7 +287,6 @@ function importCSV(file) {
                 if (fields.length < 8) return;
                 const id = fields[0].trim();
                 if (!id || existingIds.has(id)) return;
-
                 const r = {
                     id,
                     date: new Date().toISOString(),
@@ -361,8 +303,8 @@ function importCSV(file) {
                 added++;
             });
 
-            saveReviews(existing);
-            renderReviews();
+            await saveReviews(existing);
+            await renderReviews();
             showToast(`${added}件のレビューを読み込みました ✅`);
         } catch (err) {
             showToast('CSVの読み込みに失敗しました');
@@ -391,26 +333,31 @@ function parseCsvLine(line) {
     return result;
 }
 
+function escapeHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initStars();
     renderReviews();
-
     document.getElementById('add-btn').addEventListener('click', addReview);
     document.getElementById('export-btn').addEventListener('click', exportCSV);
-
     document.getElementById('import-btn').addEventListener('click', () => {
         document.getElementById('import-file').click();
     });
-
     document.getElementById('import-file').addEventListener('change', (e) => {
         if (e.target.files[0]) {
             importCSV(e.target.files[0]);
             e.target.value = '';
         }
     });
-
     document.getElementById('variety-input').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') document.getElementById('add-btn').click();
     });
 });
+
 

@@ -444,8 +444,8 @@ button#add-btn:active {
 }
 
 .review-chart-container {
-    flex: 0 0 140px;
-    width: 140px;
+    flex: 0 0 180px;
+    width: 180px;
 }
 
 .review-ratings-list {
