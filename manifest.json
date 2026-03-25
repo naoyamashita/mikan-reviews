@@ -1,0 +1,22 @@
+{
+  "name": "みかんレビュー",
+  "short_name": "みかんDB",
+  "description": "みかんの品種別 テイスティングノート",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a0a00",
+  "theme_color": "#ff8c00",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

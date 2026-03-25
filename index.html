@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍊 みかんレビュー | 品種別レビューデータベース</title>
+    <meta name="description" content="みかんの品種ごとに甘味・酸味・剥きやすさ・濃厚さを記録するレビューアプリ">
+    <meta name="theme-color" content="#ff8c00">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="みかんDB">
+    <link rel="icon" type="image/png" href="apple-touch-icon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <div class="header-stats">
+                    <span id="review-count">0</span> 件のレビュー
+                </div>
+                <button id="export-btn" class="icon-btn small" title="CSVダウンロード">⬇️</button>
+            </div>
+            <h1>🍊 みかんレビュー</h1>
+            <p class="subtitle">品種別 テイスティングノート</p>
+        </header>
+
+        <main>
+            <!-- Input Form -->
+            <section class="input-section">
+                <h2>新しいレビューを追加</h2>
+                <div class="input-group">
+                    <label for="variety-input">品種名</label>
+                    <input type="text" id="variety-input" placeholder="例：温州みかん、はるみ、デコポン" autocomplete="off">
+                </div>
+                <div class="ratings-grid">
+                    <div class="rating-item">
+                        <label for="sweetness-input">🍯 甘味</label>
+                        <div class="stars-input" data-target="sweetness-input">
+                            <span class="star" data-val="1">★</span>
+                            <span class="star" data-val="2">★</span>
+                            <span class="star" data-val="3">★</span>
+                            <span class="star" data-val="4">★</span>
+                            <span class="star" data-val="5">★</span>
+                        </div>
+                        <input type="hidden" id="sweetness-input" value="0">
+                        <span class="rating-val" id="sweetness-val">-</span>
+                    </div>
+                    <div class="rating-item">
+                        <label for="acidity-input">🍋 酸味</label>
+                        <div class="stars-input" data-target="acidity-input">
+                            <span class="star" data-val="1">★</span>
+                            <span class="star" data-val="2">★</span>
+                            <span class="star" data-val="3">★</span>
+                            <span class="star" data-val="4">★</span>
+                            <span class="star" data-val="5">★</span>
+                        </div>
+                        <input type="hidden" id="acidity-input" value="0">
+                        <span class="rating-val" id="acidity-val">-</span>
+                    </div>
+                    <div class="rating-item">
+                        <label for="peelability-input">👐 剥きやすさ</label>
+                        <div class="stars-input" data-target="peelability-input">
+                            <span class="star" data-val="1">★</span>
+                            <span class="star" data-val="2">★</span>
+                            <span class="star" data-val="3">★</span>
+                            <span class="star" data-val="4">★</span>
+                            <span class="star" data-val="5">★</span>
+                        </div>
+                        <input type="hidden" id="peelability-input" value="0">
+                        <span class="rating-val" id="peelability-val">-</span>
+                    </div>
+                    <div class="rating-item">
+                        <label for="richness-input">🌟 濃厚さ</label>
+                        <div class="stars-input" data-target="richness-input">
+                            <span class="star" data-val="1">★</span>
+                            <span class="star" data-val="2">★</span>
+                            <span class="star" data-val="3">★</span>
+                            <span class="star" data-val="4">★</span>
+                            <span class="star" data-val="5">★</span>
+                        </div>
+                        <input type="hidden" id="richness-input" value="0">
+                        <span class="rating-val" id="richness-val">-</span>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="memo-input">感想・メモ（任意）</label>
+                    <textarea id="memo-input" placeholder="食べた感想、産地、購入場所など…" rows="3"></textarea>
+                </div>
+                <button id="add-btn">レビューを保存する</button>
+            </section>
+
+            <!-- Review List -->
+            <section class="history-section">
+                <h2>レビュー一覧 <span class="section-action"><button id="import-btn" class="link-btn">CSVから読み込み ↑</button></span></h2>
+                <input type="file" id="import-file" accept=".csv" class="hidden">
+                <div id="review-list" class="review-list">
+                    <p class="empty-state">まだレビューがありません。<br>上のフォームから最初のレビューを追加しましょう！</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>データはこのデバイスのブラウザに保存されます。</p>
+            <p>⬇️ ボタンでCSVとしてダウンロードできます。</p>
+        </footer>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hide"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
