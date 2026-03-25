@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🍊 みかんレビュー | 品種別レビューデータベース</title>
-    <meta name="description" content="みかんの品種ごとに甘味・酸味・剥きやすさ・濃厚さを記録するレビューアプリ">
+    <meta name="description" content="みかんの品種ごとに甘味・酸味・剥きやすさ・コク・じょうのうの薄さを記録するレビューアプリ">
     <meta name="theme-color" content="#ff8c00">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -75,7 +75,7 @@
                         <span class="rating-val" id="peelability-val">-</span>
                     </div>
                     <div class="rating-item">
-                        <label for="richness-input">🌟 濃厚さ</label>
+                        <label for="richness-input">🌟 コク</label>
                         <div class="stars-input" data-target="richness-input">
                             <span class="star" data-val="1">★</span>
                             <span class="star" data-val="2">★</span>
@@ -85,6 +85,18 @@
                         </div>
                         <input type="hidden" id="richness-input" value="0">
                         <span class="rating-val" id="richness-val">-</span>
+                    </div>
+                    <div class="rating-item">
+                        <label for="membrane-input">🫧 じょうのうの薄さ</label>
+                        <div class="stars-input" data-target="membrane-input">
+                            <span class="star" data-val="1">★</span>
+                            <span class="star" data-val="2">★</span>
+                            <span class="star" data-val="3">★</span>
+                            <span class="star" data-val="4">★</span>
+                            <span class="star" data-val="5">★</span>
+                        </div>
+                        <input type="hidden" id="membrane-input" value="0">
+                        <span class="rating-val" id="membrane-val">-</span>
                     </div>
                 </div>
                 <div class="input-group">

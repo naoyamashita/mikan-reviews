@@ -119,8 +119,12 @@ function renderReviews() {
                     ${starsHTML(r.peelability)}
                 </div>
                 <div class="review-rating-row">
-                    <div class="review-rating-label">🌟 濃厚さ</div>
+                    <div class="review-rating-label">🌟 コク</div>
                     ${starsHTML(r.richness)}
+                </div>
+                <div class="review-rating-row">
+                    <div class="review-rating-label">🫧 じょうのうの薄さ</div>
+                    ${starsHTML(r.membrane)}
                 </div>
             </div>
             ${r.memo ? `<div class="review-memo">💬 ${escapeHtml(r.memo)}</div>` : ''}
@@ -155,10 +159,11 @@ function addReview() {
     const acidity = parseInt(document.getElementById('acidity-input').value) || 0;
     const peelability = parseInt(document.getElementById('peelability-input').value) || 0;
     const richness = parseInt(document.getElementById('richness-input').value) || 0;
+    const membrane = parseInt(document.getElementById('membrane-input').value) || 0;
     const memo = document.getElementById('memo-input').value.trim();
 
     if (!variety) { showToast('品種名を入力してください 🍊'); return; }
-    if (sweetness === 0 || acidity === 0 || peelability === 0 || richness === 0) {
+    if (sweetness === 0 || acidity === 0 || peelability === 0 || richness === 0 || membrane === 0) {
         showToast('すべての評価項目を選択してください ⭐');
         return;
     }
@@ -171,6 +176,7 @@ function addReview() {
         acidity,
         peelability,
         richness,
+        membrane,
         memo
     };
 
@@ -199,7 +205,7 @@ function exportCSV() {
     const reviews = loadReviews();
     if (reviews.length === 0) { showToast('エクスポートするデータがありません'); return; }
 
-    const header = ['ID', '日付', '品種', '甘味', '酸味', '剥きやすさ', '濃厚さ', '感想・メモ'];
+    const header = ['ID', '日付', '品種', '甘味', '酸味', '剥きやすさ', 'コク', 'じょうのうの薄さ', '感想・メモ'];
     const rows = reviews.map(r => [
         r.id,
         formatDate(r.date),
@@ -208,6 +214,7 @@ function exportCSV() {
         r.acidity,
         r.peelability,
         r.richness,
+        r.membrane || 0,
         `"${(r.memo || '').replace(/"/g, '""')}"`
     ].join(','));
 
@@ -252,7 +259,8 @@ function importCSV(file) {
                     acidity: parseInt(fields[4]) || 0,
                     peelability: parseInt(fields[5]) || 0,
                     richness: parseInt(fields[6]) || 0,
-                    memo: fields[7] || ''
+                    membrane: parseInt(fields[7]) || 0,
+                    memo: fields[8] || ''
                 };
                 existing.push(r);
                 added++;
