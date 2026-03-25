@@ -33,21 +33,21 @@ async function loadReviews() {
         let res;
         
         if (isGas()) {
-            // Explicitly set redirect and mode for GAS
-            res = await fetch(apiUrl, {
+            // Add cache buster to URL to force fresh fetch
+            const t = Date.now();
+            const fetchUrl = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 't=' + t;
+            
+            res = await fetch(fetchUrl, {
                 method: 'GET',
                 mode: 'cors',
                 redirect: 'follow',
                 cache: 'no-cache'
-            }).catch(err => {
-                console.error('Fetch Error:', err);
-                return null;
-            });
+            }); // No inner catch!
         } else {
             res = await fetch(apiUrl, {
                 headers: { 'x-mikan-passcode': passcode },
                 cache: 'no-cache'
-            }).catch(() => null);
+            });
         }
 
         if (res && res.ok) {
