@@ -17,6 +17,30 @@ function isGas() {
     return url && url.includes('script.google.com');
 }
 
+// --- Helper: JSONP for GAS (Bypass CORS) ---
+function loadJSONP(url) {
+    return new Promise((resolve, reject) => {
+        const callbackName = 'gasCallback_' + Math.round(Math.random() * 1000000);
+        const script = document.createElement('script');
+        
+        window[callbackName] = (data) => {
+            delete window[callbackName];
+            document.body.removeChild(script);
+            resolve(data);
+        };
+        
+        script.onerror = () => {
+            delete window[callbackName];
+            document.body.removeChild(script);
+            reject(new Error('通信環境またはURLが正しくありません'));
+        };
+        
+        const jsonpUrl = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
+        script.src = jsonpUrl;
+        document.body.appendChild(script);
+    });
+}
+
 // --- Data Layer ---
 async function loadReviews() {
     const apiUrl = getApiUrl();
@@ -33,22 +57,13 @@ async function loadReviews() {
         let reviews = [];
         
         if (isGas()) {
-            // Use fetch (GET) - confirmed working with CSP fix
-            const t = Date.now();
-            const fetchUrl = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 't=' + t;
-            const res = await fetch(fetchUrl, {
-                method: 'GET',
-                mode: 'cors',
-                redirect: 'follow'
-            });
-            if (res && res.ok) {
-                const data = await res.json();
-                if (data && data.error) throw new Error(data.error);
-                reviews = Array.isArray(data) ? data : (data.reviews || []);
-                isServerOnline = true;
-            } else {
-                throw new Error(`HTTP ${res ? res.status : '?'}`);
-            }
+            // Use JSONP (GET) for maximum reliability
+            const fetchUrl = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'action=load&t=' + Date.now();
+            const data = await loadJSONP(fetchUrl);
+            
+            if (data && data.error) throw new Error(data.error);
+            reviews = Array.isArray(data) ? data : (data.reviews || []);
+            isServerOnline = true;
         } else {
             const res = await fetch(apiUrl, {
                 headers: { 'x-mikan-passcode': passcode },
@@ -91,20 +106,18 @@ async function saveReviews(reviews) {
 
     try {
         if (isGas()) {
-            // Use POST with 'no-cors' for maximum reliability in writing
-            // Note: We can't read the response in no-cors, so we assume success if no exception
-            await fetch(apiUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: 'save', reviews, passcode })
-            });
+            // Use JSONP (GET) for saving as well
+            const dataPayload = encodeURIComponent(JSON.stringify({ reviews, passcode }));
+            const saveUrl = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'action=save&data=' + dataPayload;
             
-            localStorage.setItem(PENDING_SYNC_KEY, 'false');
-            updateSyncStatus('online', 'クラウド保存完了');
-            // Force a reload to verify
-            setTimeout(() => loadReviews(), 1000);
-            return true;
+            const result = await loadJSONP(saveUrl);
+            if (result && result.success) {
+                localStorage.setItem(PENDING_SYNC_KEY, 'false');
+                updateSyncStatus('online', 'クラウド同期完了');
+                return true;
+            } else {
+                throw new Error(result ? (result.error || '保存失敗') : '応答なし');
+            }
         } else {
             const res = await fetch(apiUrl, {
                 method: 'POST',
@@ -125,7 +138,7 @@ async function saveReviews(reviews) {
     } catch (e) {
         console.error('Save Error:', e);
         localStorage.setItem(PENDING_SYNC_KEY, 'true');
-        updateSyncStatus('pending', isGas() ? `保存失敗: ${e.message}` : '未同期あり');
+        updateSyncStatus('pending', isGas() ? `保存エラー: ${e.message}` : '未同期あり');
         return false;
     }
 }
