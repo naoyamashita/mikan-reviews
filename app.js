@@ -146,8 +146,18 @@ async function deleteReview(id) {
     showToast('削除しました');
 }
 
+function updateVarietySuggestions(reviews) {
+    const datalist = document.getElementById('variety-list');
+    if (!datalist) return;
+    
+    const varieties = [...new Set(reviews.map(r => r.variety.trim()))].sort();
+    datalist.innerHTML = varieties.map(v => `<option value="${escapeHtml(v)}">`).join('');
+}
+
 async function renderReviews() {
     const reviews = await loadReviews();
+    updateVarietySuggestions(reviews);
+    
     const list = document.getElementById('review-list');
     const countEl = document.getElementById('review-count');
     countEl.textContent = reviews.length;
