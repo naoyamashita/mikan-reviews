@@ -73,8 +73,9 @@ async function loadReviews() {
     } catch (e) {
         console.error('Load Error:', e);
         isServerOnline = false;
-        // More distinct text to confirm version
-        updateSyncStatus('offline', isGas() ? 'ネットワーク遮断(CORS等)' : 'ローカルモード');
+        // GAS/CORS debug: show the actual error message
+        const errMsg = e.message || '不明なエラー';
+        updateSyncStatus('offline', isGas() ? `エラー: ${errMsg}` : 'ローカルモード');
     }
 
     const raw = localStorage.getItem(STORAGE_KEY);
