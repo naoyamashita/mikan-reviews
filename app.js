@@ -150,11 +150,11 @@ function createRadarChart(data, size = 100, showLabels = false) {
     const center = size / 2;
     const radius = size * 0.35;
     const points = [
-        { label: '甘味', val: data.sweetness || 0 },
-        { label: '酸味', val: data.acidity || 0 },
-        { label: '剥きやすさ', val: data.peelability || 0 },
-        { label: 'コク', val: data.richness || 0 },
-        { label: 'じょうのう', val: data.membrane || 0 }
+        { label: 'コク', val: data.richness || 0 },        // 上
+        { label: '甘味', val: data.sweetness || 0 },       // 右上
+        { label: 'じょうのう', val: data.membrane || 0 },   // 右下
+        { label: '剥きやすさ', val: data.peelability || 0 }, // 左下
+        { label: '酸味', val: data.acidity || 0 }          // 左上
     ];
 
     // Background pentagons (levels 1-5)

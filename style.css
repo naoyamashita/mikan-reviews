@@ -198,10 +198,12 @@ textarea::placeholder {
     background: rgba(255, 100, 0, 0.05);
     border: 1px solid var(--glass-border);
     border-radius: 14px;
-    padding: 1rem;
+    padding: 0.75rem 0.5rem;
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 0.5rem;
+    text-align: center;
 }
 
 .rating-item label {
@@ -344,13 +346,13 @@ button#add-btn:active {
 
 .chart-bg-line {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.08);
+    stroke: rgba(255, 255, 255, 0.2);
     stroke-width: 0.5;
 }
 
 .chart-axis-line {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.05);
+    stroke: rgba(255, 255, 255, 0.15);
     stroke-width: 0.5;
 }
 
@@ -581,15 +583,21 @@ footer {
 ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
 
 /* Responsive */
-@media (min-width: 480px) {
+@media (min-width: 600px) {
     .ratings-grid,
     .review-ratings {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
+@media (max-width: 480px) {
+    .ratings-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
 @media (max-width: 400px) {
     .ratings-grid { grid-template-columns: 1fr; }
     h1 { font-size: 2rem; }
-    .input-section, .history-section, .stats-section { padding: 1.5rem; }
+    .input-section, .history-section, .stats-section { padding: 1.25rem; }
 }
