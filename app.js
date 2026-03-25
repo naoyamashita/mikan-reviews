@@ -494,7 +494,13 @@ document.addEventListener('DOMContentLoaded', () => {
         renderReviews();
     });
 
-    document.getElementById('add-btn').addEventListener('click', addReview);
+    const addBtn = document.getElementById('add-btn');
+    const handleAdd = (e) => {
+        if (e.type === 'touchstart') e.preventDefault();
+        addReview();
+    };
+    addBtn.addEventListener('click', handleAdd);
+    addBtn.addEventListener('touchstart', handleAdd, { passive: false });
     document.getElementById('export-btn').addEventListener('click', exportCSV);
     document.getElementById('import-btn').addEventListener('click', () => {
         document.getElementById('import-file').click();
