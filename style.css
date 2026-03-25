@@ -281,9 +281,23 @@ button#add-btn:active {
 }
 
 .stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.stats-main-chart {
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
+}
+
+.stats-cards-mini {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
     gap: 0.75rem;
+    width: 100%;
 }
 
 .stats-card {
@@ -319,6 +333,38 @@ button#add-btn:active {
     height: 100%;
     background: linear-gradient(to right, var(--accent-primary), var(--accent-gold));
     border-radius: 2px;
+}
+
+/* Radar Chart SVG Styles */
+.radar-chart {
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 0 8px rgba(255, 140, 0, 0.2));
+}
+
+.chart-bg-line {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 0.5;
+}
+
+.chart-axis-line {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.05);
+    stroke-width: 0.5;
+}
+
+.chart-data-poly {
+    fill: rgba(255, 140, 0, 0.35);
+    stroke: var(--accent-primary);
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+.chart-label {
+    fill: var(--text-secondary);
+    font-size: 8px;
+    font-weight: 600;
 }
 
 /* History / Review Section */
@@ -414,22 +460,37 @@ button#add-btn:active {
     margin-top: 0.2rem;
 }
 
-.review-ratings {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-    margin-bottom: 0.875rem;
+.review-body {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.review-chart-container {
+    flex: 0 0 100px;
+    width: 100px;
+}
+
+.review-ratings-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
 }
 
 .review-rating-row {
     display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    gap: 0.5rem;
 }
 
 .review-rating-label {
-    font-size: 0.7rem;
     color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
 }
 
 .review-stars {

@@ -105,26 +105,26 @@ function renderReviews() {
                 <div class="review-variety">${escapeHtml(r.variety)}</div>
                 <div class="review-date">${formatDate(r.date)}</div>
             </div>
-            <div class="review-ratings">
-                <div class="review-rating-row">
-                    <div class="review-rating-label">🍯 甘味</div>
-                    ${starsHTML(r.sweetness)}
+            <div class="review-body">
+                <div class="review-chart-container">
+                    ${createRadarChart(r, 120, false)}
                 </div>
-                <div class="review-rating-row">
-                    <div class="review-rating-label">🍋 酸味</div>
-                    ${starsHTML(r.acidity)}
-                </div>
-                <div class="review-rating-row">
-                    <div class="review-rating-label">👐 剥きやすさ</div>
-                    ${starsHTML(r.peelability)}
-                </div>
-                <div class="review-rating-row">
-                    <div class="review-rating-label">🌟 コク</div>
-                    ${starsHTML(r.richness)}
-                </div>
-                <div class="review-rating-row">
-                    <div class="review-rating-label">🫧 じょうのうの薄さ</div>
-                    ${starsHTML(r.membrane)}
+                <div class="review-ratings-list">
+                    <div class="review-rating-row">
+                        <span class="review-rating-label">🍯 甘味:</span> ${starsHTML(r.sweetness)}
+                    </div>
+                    <div class="review-rating-row">
+                        <span class="review-rating-label">🍋 酸味:</span> ${starsHTML(r.acidity)}
+                    </div>
+                    <div class="review-rating-row">
+                        <span class="review-rating-label">👐 剥き:</span> ${starsHTML(r.peelability)}
+                    </div>
+                    <div class="review-rating-row">
+                        <span class="review-rating-label">🌟 コク:</span> ${starsHTML(r.richness)}
+                    </div>
+                    <div class="review-rating-row">
+                        <span class="review-rating-label">🫧 じょうのう:</span> ${starsHTML(r.membrane)}
+                    </div>
                 </div>
             </div>
             ${r.memo ? `<div class="review-memo">💬 ${escapeHtml(r.memo)}</div>` : ''}
@@ -146,6 +146,64 @@ function renderReviews() {
     updateStats(reviews);
 }
 
+function createRadarChart(data, size = 100, showLabels = false) {
+    const center = size / 2;
+    const radius = size * 0.35;
+    const points = [
+        { label: '甘味', val: data.sweetness || 0 },
+        { label: '酸味', val: data.acidity || 0 },
+        { label: '剥きやすさ', val: data.peelability || 0 },
+        { label: 'コク', val: data.richness || 0 },
+        { label: 'じょうのう', val: data.membrane || 0 }
+    ];
+
+    // Background pentagons (levels 1-5)
+    let bgs = '';
+    for (let level = 1; level <= 5; level++) {
+        const r = (level / 5) * radius;
+        const pts = points.map((_, i) => {
+            const angle = (i / 5) * 2 * Math.PI - Math.PI / 2;
+            return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
+        }).join(' ');
+        bgs += `<polygon points="${pts}" class="chart-bg-line" />`;
+    }
+
+    // Axis lines
+    let axes = '';
+    points.forEach((_, i) => {
+        const angle = (i / 5) * 2 * Math.PI - Math.PI / 2;
+        axes += `<line x1="${center}" y1="${center}" x2="${center + radius * Math.cos(angle)}" y2="${center + radius * Math.sin(angle)}" class="chart-axis-line" />`;
+    });
+
+    // Data polygon
+    const dataPts = points.map((p, i) => {
+        const r = (Math.max(0.5, p.val) / 5) * radius;
+        const angle = (i / 5) * 2 * Math.PI - Math.PI / 2;
+        return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
+    }).join(' ');
+    const dataPoly = `<polygon points="${dataPts}" class="chart-data-poly" />`;
+
+    // Labels
+    let labels = '';
+    if (showLabels) {
+        points.forEach((p, i) => {
+            const angle = (i / 5) * 2 * Math.PI - Math.PI / 2;
+            const x = center + (radius + 15) * Math.cos(angle);
+            const y = center + (radius + 15) * Math.sin(angle);
+            labels += `<text x="${x}" y="${y}" class="chart-label" text-anchor="middle" dominant-baseline="middle">${p.label}</text>`;
+        });
+    }
+
+    return `
+        <svg viewBox="0 0 ${size} ${size}" class="radar-chart">
+            ${bgs}
+            ${axes}
+            ${dataPoly}
+            ${labels}
+        </svg>
+    `;
+}
+
 function updateStats(reviews) {
     const section = document.getElementById('stats-section');
     if (reviews.length === 0) {
@@ -164,28 +222,43 @@ function updateStats(reviews) {
     });
 
     const count = reviews.length;
+    const avgData = {
+        sweetness: (sums.sweetness / count),
+        acidity: (sums.acidity / count),
+        peelability: (sums.peelability / count),
+        richness: (sums.richness / count),
+        membrane: (sums.membrane / count)
+    };
+
     const stats = [
-        { label: '🍯 甘味', key: 'sweetness' },
-        { label: '🍋 酸味', key: 'acidity' },
-        { label: '👐 剥きやすさ', key: 'peelability' },
-        { label: '🌟 コク', key: 'richness' },
-        { label: '🫧 じょうのう', key: 'membrane' }
+        { label: '🍯 甘味', val: avgData.sweetness },
+        { label: '🍋 酸味', val: avgData.acidity },
+        { label: '👐 剥きやすさ', val: avgData.peelability },
+        { label: '🌟 コク', val: avgData.richness },
+        { label: '🫧 じょうのう', val: avgData.membrane }
     ];
 
     const grid = document.getElementById('stats-grid');
-    grid.innerHTML = stats.map(s => {
-        const avg = (sums[s.key] / count).toFixed(1);
-        const percent = (avg / 5) * 100;
-        return `
-            <div class="stats-card">
-                <div class="stats-label">${s.label}</div>
-                <div class="stats-value">${avg}</div>
-                <div class="stats-bar-bg">
-                    <div class="stats-bar-fill" style="width: ${percent}%"></div>
-                </div>
-            </div>
-        `;
-    }).join('');
+    grid.innerHTML = `
+        <div class="stats-main-chart">
+            ${createRadarChart(avgData, 200, true)}
+        </div>
+        <div class="stats-cards-mini">
+            ${stats.map(s => {
+                const avg = s.val.toFixed(1);
+                const percent = (avg / 5) * 100;
+                return `
+                    <div class="stats-card">
+                        <div class="stats-label">${s.label}</div>
+                        <div class="stats-value">${avg}</div>
+                        <div class="stats-bar-bg">
+                            <div class="stats-bar-fill" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
 }
 
 function escapeHtml(str) {
