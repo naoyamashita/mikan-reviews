@@ -34,8 +34,12 @@
             <section class="input-section">
                 <h2>新しいレビューを追加</h2>
                 <div class="input-group">
-                    <label for="variety-input">品種名</label>
-                    <input type="text" id="variety-input" placeholder="例：温州みかん、はるみ、デコポン" autocomplete="off">
+                    <label for="member-input">👤 評価者名</label>
+                    <input type="text" id="member-input" placeholder="例：パパ、ママ、ひな">
+                </div>
+                <div class="input-group">
+                    <label for="variety-input">🍊 品種名</label>
+                    <input type="text" id="variety-input" placeholder="例：温州みかん、せとか" autocomplete="off">
                 </div>
                 <div class="ratings-grid">
                     <div class="rating-item">
@@ -106,13 +110,6 @@
                 <button id="add-btn">レビューを保存する</button>
             </section>
 
-            <!-- Statistics Summary -->
-            <section id="stats-section" class="stats-section hidden">
-                <h2>📊 全体の集計</h2>
-                <div class="stats-grid" id="stats-grid">
-                    <!-- Stats cards added here by JS -->
-                </div>
-            </section>
 
             <!-- Review List -->
             <section class="history-section">

@@ -134,6 +134,12 @@ h1 {
     margin-bottom: 1.5rem;
 }
 
+@media (max-width: 480px) {
+    .input-section {
+        padding: 1.5rem 1.25rem;
+    }
+}
+
 .input-section h2,
 .history-section h2 {
     font-size: 1.1rem;
@@ -192,6 +198,18 @@ textarea::placeholder {
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
     margin-bottom: 1.25rem;
+}
+
+@media (max-width: 400px) {
+    .ratings-grid {
+        gap: 0.75rem;
+    }
+    .rating-item {
+        padding: 0.75rem 0.25rem;
+    }
+    .stars-input .star {
+        font-size: 1.3rem;
+    }
 }
 
 .rating-item {
@@ -271,71 +289,6 @@ button#add-btn:active {
     opacity: 0.9;
 }
 
-/* Statistics Section */
-.stats-section {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: var(--glass-shadow);
-}
-
-.stats-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    align-items: center;
-}
-
-.stats-main-chart {
-    width: 100%;
-    max-width: 280px;
-    margin: 0 auto;
-}
-
-.stats-cards-mini {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-    gap: 0.75rem;
-    width: 100%;
-}
-
-.stats-card {
-    background: rgba(255, 140, 0, 0.08);
-    border-radius: 12px;
-    padding: 0.75rem;
-    text-align: center;
-    border: 1px solid rgba(255, 150, 50, 0.1);
-}
-
-.stats-label {
-    font-size: 0.65rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.25rem;
-    white-space: nowrap;
-}
-
-.stats-value {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--accent-gold);
-    margin-bottom: 0.4rem;
-}
-
-.stats-bar-bg {
-    height: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.stats-bar-fill {
-    height: 100%;
-    background: linear-gradient(to right, var(--accent-primary), var(--accent-gold));
-    border-radius: 2px;
-}
 
 /* Radar Chart SVG Styles */
 .radar-chart {
@@ -450,28 +403,32 @@ button#add-btn:active {
 }
 
 .review-variety {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: var(--accent-primary);
 }
 
-.review-date {
+.review-count-badge {
     font-size: 0.7rem;
-    color: var(--text-secondary);
-    flex-shrink: 0;
-    margin-top: 0.2rem;
+    background: rgba(255, 140, 0, 0.15);
+    color: var(--accent-gold);
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
 }
 
 .review-body {
     display: flex;
     align-items: center;
     gap: 1.25rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--glass-border);
 }
 
 .review-chart-container {
-    flex: 0 0 100px;
-    width: 100px;
+    flex: 0 0 140px;
+    width: 140px;
 }
 
 .review-ratings-list {
@@ -505,39 +462,71 @@ button#add-btn:active {
     color: var(--star-inactive);
 }
 
-.review-memo {
+.review-comments-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.review-comment-item {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.comment-author {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.comment-date {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    margin-left: auto;
+    margin-right: 0.75rem;
+}
+
+.comment-text {
     font-size: 0.85rem;
     color: var(--text-secondary);
     line-height: 1.6;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--glass-border);
-    margin-top: 0.25rem;
 }
-
-.review-card-footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 0.75rem;
-}
-
-.delete-btn {
+.delete-btn.mini {
     background: transparent;
     border: none;
-    color: rgba(239, 83, 80, 0.5);
-    font-size: 0.75rem;
+    color: rgba(239, 83, 80, 0.3);
+    font-size: 0.8rem;
     cursor: pointer;
-    padding: 0.3rem 0.6rem;
-    border-radius: 8px;
-    font-family: inherit;
+    padding: 0.2rem;
     transition: all 0.2s;
-    width: auto;
-    min-height: auto;
 }
 
-.delete-btn:hover {
-    background: rgba(239, 83, 80, 0.1);
+.delete-btn.mini:hover {
     color: var(--danger);
-    transform: none;
+}
+
+.review-variety-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.review-avg-label {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 140, 0, 0.1);
+    border-radius: 4px;
+    color: var(--accent-gold);
 }
 
 /* Toast */
