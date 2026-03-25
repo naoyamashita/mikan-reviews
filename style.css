@@ -154,6 +154,31 @@ header {
     line-height: 1.4;
 }
 
+.settings-debug {
+    margin-top: 1.25rem;
+    border-top: 1px solid var(--glass-border);
+    padding-top: 1rem;
+}
+
+.debug-log {
+    font-family: monospace;
+    font-size: 10px;
+    background: rgba(0,0,0,0.2);
+    padding: 8px;
+    border-radius: 8px;
+    max-height: 120px;
+    overflow-y: auto;
+    margin-top: 8px;
+    color: #aaa;
+    line-height: 1.4;
+    border: 1px inset rgba(255,140,0,0.1);
+}
+
+.debug-log div {
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 2px 0;
+}
+
 .header-stats {
     font-size: 0.8rem;
     color: var(--text-secondary);
