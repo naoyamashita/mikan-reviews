@@ -7,7 +7,9 @@ const PENDING_SYNC_KEY = 'mikan_pending_sync';
 let isServerOnline = false;
 
 function getApiUrl() {
-    return localStorage.getItem(GAS_URL_KEY) || DEFAULT_LOCAL_API;
+    const url = localStorage.getItem(GAS_URL_KEY);
+    if (!url) return DEFAULT_LOCAL_API;
+    return url.trim();
 }
 
 function isGas() {
