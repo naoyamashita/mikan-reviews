@@ -123,7 +123,7 @@ function renderReviews() {
                         <span class="review-rating-label">🌟 コク:</span> ${starsHTML(r.richness)}
                     </div>
                     <div class="review-rating-row">
-                        <span class="review-rating-label">🫧 じょうのう:</span> ${starsHTML(r.membrane)}
+                        <span class="review-rating-label">🦷 食感:</span> ${starsHTML(r.membrane)}
                     </div>
                 </div>
             </div>
@@ -152,7 +152,7 @@ function createRadarChart(data, size = 100, showLabels = false) {
     const points = [
         { label: 'コク', val: data.richness || 0 },        // 上
         { label: '甘味', val: data.sweetness || 0 },       // 右上
-        { label: 'じょうのう', val: data.membrane || 0 },   // 右下
+        { label: '食感', val: data.membrane || 0 },        // 右下
         { label: '剥きやすさ', val: data.peelability || 0 }, // 左下
         { label: '酸味', val: data.acidity || 0 }          // 左上
     ];
@@ -235,7 +235,7 @@ function updateStats(reviews) {
         { label: '🍋 酸味', val: avgData.acidity },
         { label: '👐 剥きやすさ', val: avgData.peelability },
         { label: '🌟 コク', val: avgData.richness },
-        { label: '🫧 じょうのう', val: avgData.membrane }
+        { label: '🦷 食感', val: avgData.membrane }
     ];
 
     const grid = document.getElementById('stats-grid');
@@ -322,7 +322,7 @@ function exportCSV() {
     const reviews = loadReviews();
     if (reviews.length === 0) { showToast('エクスポートするデータがありません'); return; }
 
-    const header = ['ID', '日付', '品種', '甘味', '酸味', '剥きやすさ', 'コク', 'じょうのうの薄さ', '感想・メモ'];
+    const header = ['ID', '日付', '品種', '甘味', '酸味', '剥きやすさ', 'コク', '食感', '感想・メモ'];
     const rows = reviews.map(r => [
         r.id,
         formatDate(r.date),
