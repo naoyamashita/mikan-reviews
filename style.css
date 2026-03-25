@@ -269,6 +269,58 @@ button#add-btn:active {
     opacity: 0.9;
 }
 
+/* Statistics Section */
+.stats-section {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--glass-shadow);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 0.75rem;
+}
+
+.stats-card {
+    background: rgba(255, 140, 0, 0.08);
+    border-radius: 12px;
+    padding: 0.75rem;
+    text-align: center;
+    border: 1px solid rgba(255, 150, 50, 0.1);
+}
+
+.stats-label {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+}
+
+.stats-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    margin-bottom: 0.4rem;
+}
+
+.stats-bar-bg {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.stats-bar-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--accent-primary), var(--accent-gold));
+    border-radius: 2px;
+}
+
 /* History / Review Section */
 .history-section {
     background: var(--card-bg);
@@ -468,8 +520,15 @@ footer {
 ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
 
 /* Responsive */
+@media (min-width: 480px) {
+    .ratings-grid,
+    .review-ratings {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
 @media (max-width: 400px) {
     .ratings-grid { grid-template-columns: 1fr; }
     h1 { font-size: 2rem; }
-    .input-section, .history-section { padding: 1.5rem; }
+    .input-section, .history-section, .stats-section { padding: 1.5rem; }
 }

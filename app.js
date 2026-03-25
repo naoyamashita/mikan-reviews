@@ -142,6 +142,50 @@ function renderReviews() {
             }
         });
     });
+
+    updateStats(reviews);
+}
+
+function updateStats(reviews) {
+    const section = document.getElementById('stats-section');
+    if (reviews.length === 0) {
+        section.classList.add('hidden');
+        return;
+    }
+    section.classList.remove('hidden');
+
+    const sums = { sweetness: 0, acidity: 0, peelability: 0, richness: 0, membrane: 0 };
+    reviews.forEach(r => {
+        sums.sweetness += r.sweetness;
+        sums.acidity += r.acidity;
+        sums.peelability += r.peelability;
+        sums.richness += r.richness;
+        sums.membrane += r.membrane;
+    });
+
+    const count = reviews.length;
+    const stats = [
+        { label: '🍯 甘味', key: 'sweetness' },
+        { label: '🍋 酸味', key: 'acidity' },
+        { label: '👐 剥きやすさ', key: 'peelability' },
+        { label: '🌟 コク', key: 'richness' },
+        { label: '🫧 じょうのう', key: 'membrane' }
+    ];
+
+    const grid = document.getElementById('stats-grid');
+    grid.innerHTML = stats.map(s => {
+        const avg = (sums[s.key] / count).toFixed(1);
+        const percent = (avg / 5) * 100;
+        return `
+            <div class="stats-card">
+                <div class="stats-label">${s.label}</div>
+                <div class="stats-value">${avg}</div>
+                <div class="stats-bar-bg">
+                    <div class="stats-bar-fill" style="width: ${percent}%"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function escapeHtml(str) {
