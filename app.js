@@ -24,25 +24,32 @@ async function loadReviews() {
         return raw ? JSON.parse(raw) : [];
     }
 
-    updateSyncStatus('pending', '判定中...');
+    updateSyncStatus('pending', '接続中...');
     
     try {
         const passcode = localStorage.getItem(PASSCODE_KEY) || '';
         let res;
         
         if (isGas()) {
-            // GAS doesn't like custom headers for GET, use query param if needed
-            // But here we just fetch all
-            res = await fetch(apiUrl).catch(() => null);
+            // Explicitly set redirect and mode for GAS
+            res = await fetch(apiUrl, {
+                method: 'GET',
+                mode: 'cors',
+                redirect: 'follow',
+                cache: 'no-cache'
+            }).catch(err => {
+                console.error('Fetch Error:', err);
+                return null;
+            });
         } else {
             res = await fetch(apiUrl, {
-                headers: { 'x-mikan-passcode': passcode }
+                headers: { 'x-mikan-passcode': passcode },
+                cache: 'no-cache'
             }).catch(() => null);
         }
 
         if (res && res.ok) {
             const data = await res.json();
-            // JSON format check for GAS (might be wrapped or different)
             const reviews = Array.isArray(data) ? data : (data.reviews || []);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
             isServerOnline = true;
@@ -57,11 +64,12 @@ async function loadReviews() {
             updateSyncStatus('offline', 'パスコード未設定');
         } else {
             isServerOnline = false;
-            updateSyncStatus('offline', 'ローカルモード');
+            updateSyncStatus('offline', isGas() ? 'クラウド接続不可' : 'ローカルモード');
         }
     } catch (e) {
+        console.error('Load Error:', e);
         isServerOnline = false;
-        updateSyncStatus('offline', 'ローカルモード');
+        updateSyncStatus('offline', isGas() ? '通信エラー' : 'ローカルモード');
     }
 
     const raw = localStorage.getItem(STORAGE_KEY);
