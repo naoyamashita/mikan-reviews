@@ -92,18 +92,26 @@ async function saveReviews(reviews) {
     try {
         let res;
         if (isGas()) {
-            // GAS POST requires passcode in body to avoid preflight issues with custom headers
+            // Use cors mode to see the actual result (now that CSP is fixed)
             res = await fetch(apiUrl, {
                 method: 'POST',
-                mode: 'no-cors', // Standard for GAS Web Apps if not handled specifically, but let's try 'cors' first
-                headers: { 'Content-Type': 'text/plain' }, // Avoid complex preflight
+                mode: 'cors', 
+                headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({ reviews, passcode })
             });
-            // With 'no-cors', we can't check res.ok, but we assume success or handle offline
-            isServerOnline = true;
-            localStorage.setItem(PENDING_SYNC_KEY, 'false');
-            updateSyncStatus('online', 'クラウド同期完了');
-            return true;
+            
+            if (res && res.ok) {
+                const result = await res.json();
+                if (result.success) {
+                    localStorage.setItem(PENDING_SYNC_KEY, 'false');
+                    updateSyncStatus('online', 'クラウド同期完了');
+                    return true;
+                } else {
+                    throw new Error(result.error || 'GAS Error');
+                }
+            } else {
+                throw new Error(`HTTP ${res ? res.status : '?'}`);
+            }
         } else {
             res = await fetch(apiUrl, {
                 method: 'POST',
@@ -122,8 +130,9 @@ async function saveReviews(reviews) {
             }
         }
     } catch (e) {
+        console.error('Save Error:', e);
         localStorage.setItem(PENDING_SYNC_KEY, 'true');
-        updateSyncStatus('pending', '未同期あり');
+        updateSyncStatus('pending', isGas() ? `保存エラー: ${e.message}` : '未同期あり');
         return false;
     }
 }
